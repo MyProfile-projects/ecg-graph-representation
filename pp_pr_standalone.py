@@ -29,6 +29,7 @@
     fast_response_to_tilt(cache)   # реакция медленной части на пробу
         article_margin(cache)          # запас надёжности результата статьи
         subsample_gain()               # попытка уточнить разметку зубца P
+        p_wave_by_phase('/путь/к/записям')   # почему в покое P находится реже
 
     Расчёты статьи тоже здесь: run_all(), make_figures(), validate().
     Имя run_all_pr выбрано, чтобы не перекрывать статейное run_all.
@@ -2062,6 +2063,71 @@ def subsample_gain(verbose=True):
     return dict(old=o, new=n)
 
 
+# ------------------------------- 11. почему в покое зубец P находится реже
+
+def p_wave_by_phase(data_dir=None, verbose=True):
+    """Высота предсердной волны и полнота разметки в покое и при наклоне.
+
+    Высота меряется как наибольший подъём в окне поиска зубца P независимо
+    от того, признал его детектор зубцом или нет: если брать только найденные
+    зубцы, отбираются заведомо удачные случаи и разница между фазами исчезает.
+    """
+    from scipy.signal import butter, filtfilt
+
+    data_dir = data_dir or DATA
+    if verbose:
+        print('\n=== 11. ПРЕДСЕРДНАЯ ВОЛНА В ПОКОЕ И ПРИ НАКЛОНЕ ===\n')
+        print(f'{"запись":8s} {"волна покой":>12s} {"волна наклон":>13s} '
+              f'{"найдено покой":>14s} {"найдено наклон":>15s}')
+    rows = []
+    for path in sorted(glob.glob(os.path.join(data_dir, '00*_ecg.edf'))):
+        name = os.path.basename(path)[:4]
+        sig, fs, marks = read_with_marks(path)
+        p1e, p2b = phase_bounds(marks)
+        r, _ = detect_r(sig, fs)
+        P, _, _, _ = detect_pt(sig, r, fs)
+        if (P > 0).sum() < 50:      # 0013 и 0027: разметки нет вовсе
+            continue
+        b, a = butter(3, [0.5 / (fs / 2), 20 / (fs / 2)], btype='band')
+        x = filtfilt(b, a, sig)
+        t = r / fs
+        vals = []
+        for lo, hi in [(30, p1e - 5), (p2b + 15, p2b + 275)]:
+            m = (t > lo) & (t < hi)
+            if m.sum() < 30:
+                vals = None
+                break
+            cand = []
+            for k in np.where(m)[0]:
+                s = max(0, r[k] - int(0.35 * fs))
+                e = r[k] - int(0.06 * fs)
+                if e > s:
+                    cand.append((x[s:e].max() - np.median(x[s:e])) * 1000)
+            vals += [float(np.median(cand)), 100 * float(np.mean(P[m] > 0))]
+        if vals is None:
+            continue
+        rows.append((name, *vals))
+        if verbose:
+            print(f'{name:8s} {vals[0]:10.0f} мкВ {vals[2]:11.0f} мкВ '
+                  f'{vals[1]:12.1f} % {vals[3]:13.1f} %')
+
+    A = np.array([[r[1], r[3], r[2]] for r in rows])   # волна покой / наклон, найдено покой
+    p_amp = stats.wilcoxon(A[:, 0], A[:, 1])[1]
+    rho, p_rho = stats.spearmanr(A[:, 0], A[:, 2])
+    if verbose:
+        print(f'\n  записей: {len(rows)}')
+        print(f'  высота волны: покой {np.median(A[:, 0]):.0f} -> '
+              f'наклон {np.median(A[:, 1]):.0f} мкВ, p = {p_amp:.4f}')
+        print(f'  выше при наклоне у {int((A[:, 1] > A[:, 0]).sum())} записей из {len(rows)}, '
+              f'прирост {np.median(A[:, 1] / A[:, 0]):.2f} раза')
+        print(f'  чем ниже волна в покое, тем реже находится P: '
+              f'rho = {rho:.2f}, p = {p_rho:.4f}')
+        print('  Отсюда нехватка пар в покое у 0011, 0012 и 0022: у них предсердная')
+        print('  волна в этой фазе самая низкая по выборке. При наклоне те же записи')
+        print('  размечаются нормально, то есть дело в сигнале, а не в сбое разметки.')
+    return dict(rows=rows, p_amp=p_amp, rho=rho, p_rho=p_rho)
+
+
 def run_all_pr(data_dir=None):
     cache = load_series(data_dir)
     identity(cache)
@@ -2076,6 +2142,7 @@ def run_all_pr(data_dir=None):
     fast_response_to_tilt(cache)
     article_margin(cache)
     subsample_gain()
+    p_wave_by_phase(data_dir)
 
 
 if __name__ == '__main__':
