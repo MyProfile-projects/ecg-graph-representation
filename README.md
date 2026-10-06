@@ -1,136 +1,141 @@
-# Обратимое графовое представление динамики ЭКГ
+# Reversible graph representation of ECG dynamics
 
-**в задаче выявления смены функционального состояния**
+**for detecting functional state changes**
 
-Код, воспроизводящий все числовые результаты, таблицы и рисунки статьи.
+Code reproducing all numerical results, tables and figures of the paper.
 
 ---
 
-## О чём работа
+## What the work is about
 
-Длительная запись электрокардиограммы преобразуется во взвешенный ориентированный граф:
-вершины соответствуют типичным формам кардиоцикла, рёбра — вероятностям переходов между ними.
-Такое представление описывает не отдельные кардиоциклы и не запись целиком, а **динамику смены
-функциональных состояний** — то, что теряется при обоих привычных подходах.
+A long-term electrocardiogram recording is converted into a weighted directed graph:
+vertices correspond to typical cardiac cycle shapes, edges to the probabilities of
+transitions between them. Such a representation describes neither individual cardiac
+cycles nor the recording as a whole, but the **dynamics of functional state changes** —
+exactly what is lost in both conventional approaches.
 
-Ключевое свойство — **обратимость**: из графа восстанавливается электрокардиограмма,
-сохраняющая форму комплексов и характер ритма исходной записи.
+The key property is **reversibility**: an electrocardiogram is reconstructed from the
+graph, preserving both the waveform and the rhythm character of the original recording.
 
-## Основные результаты
+## Main results
 
-| Показатель | Значение |
-|---|---|
-| Обработано кардиоциклов | 13 909 |
-| Чувствительность выделения R-зубцов | 100 % |
-| Ошибка восстановления кардиоцикла | 2,2 ± 0,6 % размаха |
-| Сжатие записи до графа | ≈ 2800× |
-| Сдвиг занятости состояний при ортостазе | 0,59 ± 0,28, p < 10⁻⁵ |
-| Стандартный показатель SDNN | изменений не выявил (p = 0,105) |
+| Quantity | Value |
+| --- | --- |
+| Cardiac cycles processed | 13 909 |
+| Sensitivity of R wave detection | 100% |
+| Cardiac cycle reconstruction error | 2.2 ± 0.6% of the signal range |
+| Compression of a recording into a graph | ≈ 2800-fold |
+| Shift in state occupancy under orthostasis | 0.59 ± 0.28, p < 10⁻⁵ |
+| Conventional SDNN index | no change detected (p = 0.105) |
 
-Смена функционального состояния выявлена у 15 обследуемых из 20 — там, где интегральный
-показатель вариабельности молчит.
+A functional state change was detected in 15 of the 20 subjects — where the integral
+variability index stays silent.
 
-## Установка
+## Installation
 
-```bash
+```
 pip install numpy scipy pyedflib PyWavelets scikit-learn matplotlib
 ```
 
-Python 3.9 и новее.
+Python 3.9 or newer.
 
-## Запуск
+## Running
 
 ### Google Colab / Jupyter
 
-Откройте `article_code.ipynb`, выполните ячейку с кодом — пройдёт проверка разметки
-на синтетических сигналах (внешние данные не требуются). Затем:
+Open `article_code.ipynb` and run the code cell: the annotation is validated on
+synthetic signals (no external data required). Then:
 
 ```python
-run_all('/content/data', roh_dir='/content/roh')      # полный расчёт, 6 этапов
-make_figures('/content/data', roh_dir='/content/roh') # девять рисунков статьи
+run_all('/content/data', roh_dir='/content/roh')       # full computation, 6 stages
+make_figures('/content/data', roh_dir='/content/roh')  # the figures of the paper
 ```
 
-### Командная строка
+### Command line
 
-```bash
-python ecg_graph_full.py --validate                    # проверка, данные не нужны
-python ecg_graph_full.py --data <папка>                # расчёт
-python ecg_graph_full.py --data <папка> --roh <папка> --figures   # рисунки
+```
+python ecg_graph_full.py --validate                    # validation, no data needed
+python ecg_graph_full.py --data <folder>               # computation
+python ecg_graph_full.py --data <folder> --roh <folder> --figures   # figures
 ```
 
-## Этапы расчёта
+## Computation stages
 
-| Этап | Содержание |
-|------|-----------|
-| 1 | Разметка кардиосигнала: R-, P- и T-зубцы |
-| 2 | Вариабельность интервалов RR, PR, RT и амплитуд зубцов |
-| 3 | Графы фаз пробы, сдвиг занятости, проверка устойчивости |
-| 4 | Сравнение с методом k-средних |
-| 5 | Обратное преобразование: точность восстановления и сжатие |
-| 6 | Графы записей тестовой базы с экспертными заключениями |
+| Stage | Content |
+| --- | --- |
+| 1 | ECG annotation: R, P and T waves |
+| 2 | Variability of the RR, PR and RT intervals and of the wave amplitudes |
+| 3 | Graphs of the test phases, occupancy shift, reproducibility check |
+| 4 | Comparison with k-means |
+| 5 | Inverse transform: reconstruction accuracy and compression |
+| 6 | Graphs of the test-database recordings with expert reports |
 
-Отдельно: проверка разметки на синтетических сигналах с заданными положениями зубцов
-и построение девяти рисунков статьи.
+Separately: validation of the annotation on synthetic signals with known wave positions,
+and construction of the figures of the paper.
 
-## Данные
+## Data
 
-Код рассчитан на два набора записей:
+The code expects two sets of recordings:
 
-- **`data`** — 20 записей пассивной ортостатической пробы (`0011_ecg.edf` … `0030_ecg.edf`),
-  три стандартных отведения, частота дискретизации 500 Гц, формат EDF+ с аннотациями этапов
-- **`roh`** — записи тестовой базы критических состояний
-  (`07_ВОРО.edf`, `10_МИТИ.edf`, `01_ГУСА.edf`, `03_СПИ2.edf`), 200 Гц
+- **`data`** — 20 passive head-up tilt test recordings (`0011_ecg.edf` … `0030_ecg.edf`),
+  three standard leads, sampling rate 500 Hz, EDF+ format with phase annotations
+- **`roh`** — recordings from the test database of critical conditions
+  (`07_VORO.edf`, `10_MITI.edf`, `01_GUSA.edf`, `03_SPI2.edf`), 200 Hz
 
-Аргумент `roh_dir` необязателен: без него этап 6 пропускается.
-Проверка на синтетических сигналах внешних данных не требует вовсе.
+The `roh_dir` argument is optional: without it stage 6 is skipped. The validation on
+synthetic signals requires no external data at all.
 
-## Воспроизводимость
+The recordings themselves are not included in this repository: they were provided for
+research use and contain data on human subjects.
 
-Генератор псевдослучайных чисел инициализируется фиксированным значением (`SEED = 42`).
-Устойчивость результата дополнительно проверяется на пяти значениях: 0, 1, 7, 42, 123.
+## Reproducibility
 
-Все параметры алгоритмов заданы в физических единицах — миллисекундах и герцах, а не
-в отсчётах. Это существенно: параметры, настроенные на 200 Гц и заданные в отсчётах,
-при 500 Гц приводят к завышению частоты сердечных сокращений вдвое.
+The random number generator is initialised with a fixed value (`SEED = 42`). Robustness
+of the result is additionally checked for five seeds: 0, 1, 7, 42, 123.
 
-## Структура кода
+All algorithm parameters are specified in physical units — milliseconds and hertz, not
+in samples. This matters: parameters tuned at 200 Hz and expressed in samples lead,
+at 500 Hz, to a twofold overestimation of the heart rate.
 
-Единый файл, ничего доустанавливать или собирать не требуется.
+## Structure of the code
 
-| Раздел | Назначение |
-|---|---|
-| `detect_r` | детекция R-зубцов: схема Пана–Томпкинса с локально адаптивным порогом |
-| `detect_pt` | детекция P- и T-зубцов: подавление QRS и вейвлет «полуволна» |
-| `fourier_vec` | разложение кардиоцикла в ряд Фурье, вектор состояния |
-| `cluster`, `build_graph` | кластеризация картой Кохонена, орграф состояний |
-| `vec_to_cycle`, `graph_to_ecg` | обратное преобразование |
-| `stage1` … `stage6` | этапы расчёта |
-| `validate`, `make_figures` | проверка разметки и построение рисунков |
+A single file; nothing has to be installed or assembled separately.
 
-## Замечание о выборке
+| Section | Purpose |
+| --- | --- |
+| `detect_r` | R wave detection: the Pan–Tompkins scheme with a locally adaptive threshold |
+| `detect_pt` | P and T wave detection: QRS suppression and a half-wave wavelet |
+| `fourier_vec` | Fourier expansion of a cardiac cycle, the state vector |
+| `cluster`, `build_graph` | clustering with a Kohonen map, the state digraph |
+| `vec_to_cycle`, `graph_to_ecg` | inverse transform |
+| `stage1` … `stage6` | computation stages |
+| `validate`, `make_figures` | annotation check and construction of the figures |
 
-Показатели PR и RT вычисляются по всем кардиоциклам, в которых найден соответствующий
-зубец. Требование одновременного присутствия P и T без нужды сократило бы выборку:
-зубец P выделяется не во всех записях — в отведении II у части обследуемых он слабо выражен.
+## A note on the sample
 
-## Материалы вне статьи (в этом же репозитории)
+The PR and RT indices are computed over all cardiac cycles in which the corresponding
+wave was detected. Requiring the simultaneous presence of P and T would reduce the
+sample without need: the P wave is not detectable in every recording — in lead II it is
+weakly expressed in some subjects.
 
-Эти файлы к статье не относятся и её результатов не воспроизводят — размещены здесь
-только ради удобства, как отдельные, самостоятельные материалы:
+## Material outside the paper (in the same repository)
 
-| Файл | Что это |
-|---|---|
-| `combined_rr_pp_pr.py` | Сравнение изменчивости рядов RR (либо PP) и PR в частотных диапазонах 0,04–0,15 и 0,16–0,4 Гц |
-| `pr_variability.ipynb` | Разложение изменчивости PR на медленную и быструю составляющие |
-| `lead_selection_pipeline.py` | Автоматический выбор отведения по качеству выделения зубцов P, Q, R, S и T |
-| `pp_pr_standalone.py` | Разметка зубцов и расчёт рядов PP и PR; используется двумя скриптами выше |
-| `lead_selection.ipynb` | Блокнот для Google Colab: выбор отведения и рисунки к отчёту, запускается без других файлов |
+These files do not belong to the paper and do not reproduce its results; they are kept
+here only for convenience, as separate self-contained material:
 
-Все они выполнены в рамках отдельной переписки, предшествующей защите диссертации, и
-к воспроизведению статьи отношения не имеют.
+| File | What it is |
+| --- | --- |
+| `combined_rr_pp_pr.py` | Comparison of the variability of the RR (or PP) and PR series in the frequency bands 0.04–0.15 and 0.16–0.4 Hz |
+| `pr_variability.ipynb` | Decomposition of PR variability into a slow and a fast component |
+| `lead_selection_pipeline.py` | Automatic lead selection by the quality of P, Q, R, S and T wave detection |
+| `pp_pr_standalone.py` | Wave annotation and computation of the PP and PR series; used by the two scripts above |
+| `lead_selection.ipynb` | Colab notebook: lead selection and figures for the report, runs without the other files |
 
-## Связанные материалы
+All of them were produced in the course of separate work preceding the thesis defence
+and are unrelated to reproducing the paper.
 
-Материалы диссертационного исследования, включая алгоритмы вейвлетной детекции зубцов,
-размещены в репозитории
+## Related material
+
+Material from the dissertation research, including the wavelet algorithms for wave
+detection, is available in the repository
 [Wavelet. P, R and T peaks detection](https://github.com/MyProfile-projects/Wavelet.-P--R--and-T-peaks-detection).
