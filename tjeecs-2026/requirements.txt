@@ -1,0 +1,8 @@
+numpy
+scipy
+pyedflib
+PyWavelets
+scikit-learn
+matplotlib
+# optional, only for the Word version of the manuscript:
+# python-docx  (and pandoc installed in the system)
