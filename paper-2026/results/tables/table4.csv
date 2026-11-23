@@ -1,0 +1,5 @@
+Recording,Section,States,HR dominant,Share,Stability,Entropy
+07_VORO,"bradycardia, narrow QRS",2,29,55%,0.91,0.43
+10_MITI,"bradycardia, narrow QRS",2,43,70%,0.65,0.86
+01_GUSA,"sudden tachycardia, narrow QRS",5,128,84%,0.95,0.16
+03_SPI2,"sudden tachycardia, narrow QRS",4,105,78%,0.93,0.28

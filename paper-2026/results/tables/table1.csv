@@ -1,0 +1,9 @@
+Scenario,"HR, bpm","R: Se / PPV, %","P: Se / PPV, %","T: Se / PPV, %"
+Clean signal,60,100 / 100,100 / 100,100 / 100
+Clean signal,100,100 / 100,100 / 100,100 / 100
+Realistic noise,70,100 / 100,100 / 100,100 / 100
+Realistic noise,45,100 / 100,100 / 100,100 / 100
+Realistic noise,130,100 / 100,70.4 / 70.4,100 / 100
+Noise and artefacts,75,100 / 100,98.7 / 98.7,100 / 100
+Noise and artefacts,160,100 / 100,87.5 / 88.1,93.1 / 97.4
+Total (1279 cycles),--,100 / 100,90.7 / 90.8,98.3 / 99.4
